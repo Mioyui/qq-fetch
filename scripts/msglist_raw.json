@@ -1,0 +1,82 @@
+{
+  "auth_flag": 0,
+  "censor_count": 0,
+  "censor_flag": 0,
+  "censor_total": 0,
+  "cginame": 2,
+  "code": 0,
+  "logininfo": {
+    "name": "工",
+    "uin": 1215866025
+  },
+  "mentioncount": 0,
+  "message": "",
+  "msglist": [
+    {
+      "certified": 0,
+      "cmtnum": 0,
+      "conlist": [
+        {
+          "con": "愚",
+          "type": 2
+        }
+      ],
+      "content": "愚",
+      "createTime": "2017年05月20日",
+      "created_time": 1495210010,
+      "editMask": 4294967294,
+      "fwdnum": 0,
+      "has_more_con": 0,
+      "isEditable": 1,
+      "issigin": 0,
+      "lastmodify": 0,
+      "lbs": {
+        "id": "",
+        "idname": "",
+        "name": "",
+        "pos_x": "",
+        "pos_y": ""
+      },
+      "name": "工",
+      "pic_template": "",
+      "right": 1,
+      "rt_sum": 0,
+      "secret": 1,
+      "source_appid": "",
+      "source_name": "",
+      "source_url": "",
+      "t1_source": 1,
+      "t1_subtype": 3,
+      "t1_termtype": 0,
+      "tid": "a9a478481a181f59ac470d00",
+      "ugc_right": 64,
+      "uin": 1215866025,
+      "wbid": 0
+    }
+  ],
+  "name": "工",
+  "num": 10,
+  "sign": 0,
+  "smoothpolicy": {
+    "comsw.disable_soso_search": 0,
+    "l1sw.read_first_cache_only": 0,
+    "l2sw.dont_get_reply_cmt": 0,
+    "l2sw.mixsvr_frdnum_per_time": 50,
+    "l3sw.hide_reply_cmt": 0,
+    "l4sw.read_tdb_only": 0,
+    "l5sw.read_cache_only": 0
+  },
+  "subcode": 0,
+  "timertotal": 0,
+  "total": 1,
+  "usrinfo": {
+    "concern": 0,
+    "createTime": "",
+    "fans": 0,
+    "followed": 0,
+    "msg": "",
+    "msgnum": 1,
+    "name": "工",
+    "uin": 1215866025
+  }
+}

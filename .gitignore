@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# 运行产物与敏感数据(切勿提交)
+config.toml
+data/
+*.cookies.json
+*.log
+.qqfetch/
+scripts/qr.png

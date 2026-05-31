@@ -1,0 +1,31 @@
+# QQ 空间说说抓取工具配置示例。
+# 复制本文件为 config.toml 后按需修改。config.toml 不会被提交(见 .gitignore)。
+
+[target]
+# 目标好友的 QQ 号(必填)。也可用命令行 --target 覆盖。
+qq = 0
+
+[fetch]
+page_size = 20            # 每页抓取的说说数量(msglist 的 num 参数)
+max_count = 0             # 抓取上限,0 表示全部
+download_images = true    # 是否下载说说中的图片
+image_concurrency = 1     # 图片下载并发数(调高更易触发风控,谨慎)
+original_image = true     # 是否尽量获取原图(而非缩略图)
+
+[network]
+delay_min = 1.0           # 请求间随机延时下界(秒)
+delay_max = 3.0           # 请求间随机延时上界(秒)
+max_retries = 3           # 单次请求失败的最大重试次数
+timeout = 15.0            # 单次请求超时(秒)
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+proxy = ""                # 可选代理,如 http://127.0.0.1:8080
+
+[storage]
+data_dir = "./data"       # 数据与图片根目录
+storage_format = "jsonl"  # jsonl 或 sqlite
+session_path = ""         # 登录态保存路径,空=默认 ~/.qqfetch/<uin>.cookies.json
+
+[login]
+qr_mode = "file"          # 二维码呈现方式: file(存PNG并打开) 或 ascii(终端,需 pillow)
+poll_interval = 2.0       # 扫码状态轮询间隔(秒)
+login_timeout = 120       # 扫码登录总超时(秒)
