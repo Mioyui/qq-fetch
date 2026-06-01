@@ -22,8 +22,11 @@ proxy = ""                # 可选代理,如 http://127.0.0.1:8080
 
 [storage]
 data_dir = "./data"       # 数据与图片根目录
-storage_format = "jsonl"  # jsonl 或 sqlite
+storage_format = "jsonl"  # jsonl / sqlite / postgres
 session_path = ""         # 登录态保存路径,空=默认 ~/.qqfetch/<uin>.cookies.json
+postgres_dsn = ""         # PostgreSQL 连接串,storage_format=postgres 时必填
+postgres_schema = "public" # PostgreSQL schema,仅允许字母/数字/下划线
+postgres_auto_init = true # 是否自动执行仓库内置建表 SQL
 
 [login]
 qr_mode = "file"          # 二维码呈现方式: file(存PNG并打开) 或 ascii(终端,需 pillow)

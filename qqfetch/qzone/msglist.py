@@ -50,12 +50,14 @@ class MsglistFetcher:
             page_tids = []
             for sh in page.items:
                 page_tids.append(sh.tid)
-                if self._cp.seen(sh.tid) or self._repo.exists(sh.tid):
+                # 断点已见过的 tid 直接跳过;仓储内是否首次入库由 save() 自己判断。
+                if self._cp.seen(sh.tid):
                     continue
-                self._repo.append(sh)
-                new_in_page += 1
-                fetched += 1
-                yield sh
+                is_new = self._repo.save(sh)
+                if is_new:
+                    new_in_page += 1
+                    fetched += 1
+                    yield sh
                 if self._max_count and fetched >= self._max_count:
                     self._cp.advance(pos + len(page.items), page_tids)
                     return

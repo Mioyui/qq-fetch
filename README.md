@@ -22,7 +22,7 @@ QQ 空间的"最近访客"是由**访问空间主页**(`user.qzone.qq.com/{QQ}`)
 ## 环境要求
 
 - Python ≥ 3.9
-- 依赖:`httpx`(以及 Python < 3.11 时的 `tomli`)
+- 依赖:`httpx`、`psycopg`(PostgreSQL 入库时使用),以及 Python < 3.11 时的 `tomli`
 
 ## 安装
 
@@ -32,6 +32,9 @@ pip install -e .            # 安装为可编辑包,提供 qqfetch 命令
 # 或仅安装运行依赖
 pip install -r requirements.txt
 ```
+
+`requirements.txt` 只覆盖基础抓取依赖。  
+如果要启用 PostgreSQL 入库,建议直接执行 `pip install -e .`,或额外安装 `psycopg>=3.2`,并确认数据库网络连通。
 
 开发(含测试工具):
 
@@ -59,6 +62,16 @@ cp config.example.toml config.toml
 # 编辑 config.toml,至少设置 [target] qq = 目标好友QQ
 ```
 
+如需直接入库 PostgreSQL,还需要在 `[storage]` 节设置:
+
+```toml
+[storage]
+storage_format = "postgres"
+postgres_dsn = "postgresql://user:password@127.0.0.1:5432/qqfetch"
+postgres_schema = "public"
+postgres_auto_init = true
+```
+
 ### 第 2 步:扫码登录
 
 ```bash
@@ -74,6 +87,8 @@ qqfetch fetch --target 123456789          # 抓取指定好友
 qqfetch fetch --target 123456789 --max 5  # 仅抓 5 条(冒烟测试)
 qqfetch fetch --target 123456789 --no-images   # 不下载图片
 ```
+
+如果 `storage_format = "postgres"` 且 `postgres_auto_init = true`,首次抓取前会自动执行仓库内置建表 SQL:`sql/postgres_schema.sql`。
 
 ## 命令与参数
 
@@ -99,7 +114,43 @@ qqfetch fetch --target 123456789 --no-images   # 不下载图片
 
 - `[network] delay_min/delay_max`:请求间随机延时(秒),**调大更安全**
 - `[fetch] image_concurrency`:图片并发,**调高更易触发风控**,默认 1
-- `[storage] storage_format`:`jsonl`(默认,可读) 或 `sqlite`
+- `[storage] storage_format`:`jsonl`(默认,可读)、`sqlite` 或 `postgres`
+- `[storage] postgres_dsn`:PostgreSQL 连接串;当 `storage_format = "postgres"` 时必填
+- `[storage] postgres_schema`:建表/查询使用的 schema,默认 `public`
+- `[storage] postgres_auto_init`:是否在抓取前自动执行 `sql/postgres_schema.sql`,默认 `true`
+
+## PostgreSQL 入库说明
+
+`storage_format = "postgres"` 时,抓取结果会按“当前快照”写入 PostgreSQL:
+
+- 说说主表使用 `(target_qq, tid)` 作为主键,重复抓取同一条说说时执行 UPSERT
+- 评论和图片按 `(target_qq, tid)` 先删除旧快照,再写入新快照
+- 主表保留结构化字段,同时保存 `raw JSONB`,方便后续补字段或排查接口变化
+
+程序默认提供并自动执行建表 SQL,也可以把 `postgres_auto_init = false` 改为手工建表。
+
+手工建表示例:
+
+```bash
+# 先创建数据库(仅首次)
+createdb qqfetch
+
+# 再导入表结构
+psql "postgresql://user:password@127.0.0.1:5432/qqfetch" -f sql/postgres_schema.sql
+```
+
+内置表结构如下:
+
+| 表名 | 用途 | 关键字段 |
+|------|------|----------|
+| `qqfetch_shuoshuo` | 说说主表 | `target_qq`,`tid`,`content`,`created_time`,`like_count`,`comment_count`,`raw`,`first_seen_at`,`last_seen_at` |
+| `qqfetch_comment` | 评论快照表 | `target_qq`,`tid`,`comment_key`,`comment_id`,`content`,`created_time`,`author_uin`,`author_name` |
+| `qqfetch_picture` | 图片快照表 | `target_qq`,`tid`,`pic_id`,`url`,`width`,`height`,`sort_index` |
+
+其中评论唯一键规则为:
+
+- 优先使用接口返回的 `comment_id`
+- 若 `comment_id` 为空,回退为 `sha1(f"{target_qq}:{tid}:{author_uin}:{created_time}:{content}")[:40]`
 
 ## 数据存储结构
 
@@ -115,6 +166,15 @@ data/
         └── failed_images.log    # 下载失败记录
 ```
 
+当 `storage_format = "sqlite"` 时,目标目录中的主数据文件为 `shuoshuo.sqlite`。
+
+当 `storage_format = "postgres"` 时:
+
+- 目标目录仍会保存 `checkpoint.json` 和 `images/`
+- 说说、评论、图片元数据写入 PostgreSQL
+- 不会在本地额外生成可查询的主数据文件
+- 如需切换目标库,只需修改 `[storage]` 下的 PostgreSQL 连接配置
+
 ## 无痕验证
 
 1. **抓包**(mitmproxy / Fiddler):运行抓取,确认**没有任何对 `user.qzone.qq.com/{目标QQ}` 主页的请求**,只有 `emotion_cgi_msglist_v6` 数据接口和图片 CDN。
@@ -126,6 +186,14 @@ data/
 ```bash
 pip install -e ".[dev]"
 pytest
+```
+
+如需执行 PostgreSQL 集成测试,额外提供测试库连接串:
+
+```bash
+# PowerShell
+$env:QQFETCH_TEST_POSTGRES_DSN="postgresql://user:password@127.0.0.1:5432/qqfetch_test"
+pytest tests/test_repository_postgres.py -q
 ```
 
 单元测试覆盖:hash33/g_tk 签名(交叉验证)、ptuiCB 回调解析、说说/图片解析、断点续传、分页去重、失效与风控分流、限速重试、无痕断言等。涉及真实 QQ 接口的部分(扫码、实际抓取)需用真实账号通过探测脚本与冒烟测试验证。

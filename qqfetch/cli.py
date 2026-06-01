@@ -57,20 +57,31 @@ def ensure_login(cfg: Config, *, force: bool = False) -> SavedSession:
 
 def run_fetch(cfg: Config, *, reset: bool = False) -> int:
     """抓取主流程,含登录失效自动重登与优雅中断。"""
-    if cfg.storage_format not in ("jsonl", "sqlite"):
-        raise ConfigError(f"不支持的 storage_format: {cfg.storage_format}(仅 jsonl / sqlite)")
+    if cfg.storage_format not in ("jsonl", "sqlite", "postgres"):
+        raise ConfigError(f"不支持的 storage_format: {cfg.storage_format}(仅 jsonl / sqlite / postgres)")
 
     target_dir = Path(cfg.data_dir) / str(cfg.target_qq)
     target_dir.mkdir(parents=True, exist_ok=True)
     cp_path = target_dir / "checkpoint.json"
-    repo_name = "shuoshuo.jsonl" if cfg.storage_format == "jsonl" else "shuoshuo.sqlite"
-    repo_path = target_dir / repo_name
+    if cfg.storage_format == "jsonl":
+        repo_path = target_dir / "shuoshuo.jsonl"
+    elif cfg.storage_format == "sqlite":
+        repo_path = target_dir / "shuoshuo.sqlite"
+    else:
+        repo_path = target_dir / "shuoshuo.postgres"
     images_dir = target_dir / "images"
 
     cp = Checkpoint.load(cp_path)
     if reset:
         cp.reset()
-    repo = make_repository(cfg.storage_format, str(repo_path))
+    repo = make_repository(
+        cfg.storage_format,
+        str(repo_path),
+        target_qq=cfg.target_qq,
+        postgres_dsn=cfg.postgres_dsn,
+        postgres_schema=cfg.postgres_schema,
+        postgres_auto_init=cfg.postgres_auto_init,
+    )
 
     session = ensure_login(cfg)
     stats = {"shuoshuo": 0, "images": 0, "image_failed": 0}

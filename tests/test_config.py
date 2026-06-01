@@ -1,4 +1,4 @@
-"""config 单测:默认值、从 TOML 读取、类型转换。"""
+"""config 单测:默认值、TOML 读取，以及 PostgreSQL 相关配置。"""
 
 from __future__ import annotations
 
@@ -12,6 +12,9 @@ def test_defaults_without_file(tmp_path):
     assert cfg.qr_mode == "file"
     assert cfg.delay_range == (1.0, 3.0)
     assert cfg.storage_format == "jsonl"
+    assert cfg.postgres_dsn == ""
+    assert cfg.postgres_schema == "public"
+    assert cfg.postgres_auto_init is True
 
 
 def test_load_from_toml(tmp_path):
@@ -28,7 +31,10 @@ def test_load_from_toml(tmp_path):
                 "delay_min = 0.5",
                 "delay_max = 1.5",
                 "[storage]",
-                'storage_format = "sqlite"',
+                'storage_format = "postgres"',
+                'postgres_dsn = "postgresql://demo:demo@127.0.0.1:5432/demo"',
+                'postgres_schema = "qqfetch"',
+                "postgres_auto_init = false",
             ]
         ),
         encoding="utf-8",
@@ -38,4 +44,7 @@ def test_load_from_toml(tmp_path):
     assert cfg.page_size == 5
     assert cfg.download_images is False
     assert cfg.delay_range == (0.5, 1.5)
-    assert cfg.storage_format == "sqlite"
+    assert cfg.storage_format == "postgres"
+    assert cfg.postgres_dsn == "postgresql://demo:demo@127.0.0.1:5432/demo"
+    assert cfg.postgres_schema == "qqfetch"
+    assert cfg.postgres_auto_init is False

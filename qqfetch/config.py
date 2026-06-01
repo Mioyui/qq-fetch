@@ -40,6 +40,9 @@ class Config:
     data_dir: str = "./data"
     storage_format: str = "jsonl"
     session_path: str = ""
+    postgres_dsn: str = ""
+    postgres_schema: str = "public"
+    postgres_auto_init: bool = True
     # login
     qr_mode: str = "file"
     poll_interval: float = 2.0
@@ -96,6 +99,9 @@ def _apply(cfg: Config, data: Dict[str, Any]) -> None:
     cfg.data_dir = str(st.get("data_dir", cfg.data_dir))
     cfg.storage_format = str(st.get("storage_format", cfg.storage_format))
     cfg.session_path = str(st.get("session_path", cfg.session_path))
+    cfg.postgres_dsn = str(st.get("postgres_dsn", cfg.postgres_dsn))
+    cfg.postgres_schema = str(st.get("postgres_schema", cfg.postgres_schema)) or "public"
+    cfg.postgres_auto_init = bool(st.get("postgres_auto_init", cfg.postgres_auto_init))
 
     lg = data.get("login", {})
     cfg.qr_mode = str(lg.get("qr_mode", cfg.qr_mode))
