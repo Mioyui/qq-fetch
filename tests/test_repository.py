@@ -89,7 +89,7 @@ def test_postgres_connect_error_is_readable(tmp_path, monkeypatch):
     class FakeOperationalError(Exception):
         """模拟 psycopg 的连接异常。"""
 
-    def _connect(_dsn: str):
+    def _connect(_dsn: str, autocommit: bool = False):
         raise FakeOperationalError("boom")
 
     fake_psycopg = SimpleNamespace(
@@ -112,6 +112,41 @@ def test_postgres_connect_error_is_readable(tmp_path, monkeypatch):
         )
     assert "无法连接 PostgreSQL" in str(excinfo.value)
     assert "db=qqfetch" in str(excinfo.value)
+
+
+def test_postgres_connect_uses_autocommit(tmp_path, monkeypatch):
+    """PostgreSQL 仓储应以 autocommit 模式建连,确保 transaction() 会真正提交。"""
+    calls = []
+
+    class FakeConn:
+        """满足初始化路径所需的最小连接对象。"""
+
+        def close(self):
+            pass
+
+    def _connect(_dsn: str, autocommit: bool = False):
+        calls.append(autocommit)
+        return FakeConn()
+
+    fake_psycopg = SimpleNamespace(
+        OperationalError=Exception,
+        connect=_connect,
+        sql=SimpleNamespace(Identifier=object, SQL=object),
+        types=SimpleNamespace(json=SimpleNamespace(Jsonb=dict)),
+    )
+    monkeypatch.setattr(
+        "qqfetch.storage.repository.importlib.import_module",
+        lambda name: fake_psycopg if name == "psycopg" else importlib.import_module(name),
+    )
+    repo = make_repository(
+        "postgres",
+        str(tmp_path / "unused"),
+        target_qq=1,
+        postgres_dsn="postgresql://user:pass@127.0.0.1:5432/qqfetch",
+        postgres_auto_init=False,
+    )
+    repo.close()
+    assert calls == [True]
 
 
 def test_comment_key_prefers_comment_id():

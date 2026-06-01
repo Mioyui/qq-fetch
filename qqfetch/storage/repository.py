@@ -157,7 +157,9 @@ class PostgresRepository:
         self._target_qq = target_qq
         self._schema = schema
         try:
-            self._conn = psycopg.connect(dsn)
+            # 开启 autocommit,让 connection.transaction() 真正作为顶层事务提交。
+            # 否则在 psycopg 默认事务模式下,这里会变成保存点,连接关闭时整批写入会被回滚。
+            self._conn = psycopg.connect(dsn, autocommit=True)
         except psycopg.OperationalError as exc:
             raise _postgres_connect_error(dsn, exc) from exc
         if auto_init:
