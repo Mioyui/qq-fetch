@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <strong>qqfetch</strong>
+        <span>说说浏览页</span>
+      </div>
+      <div class="topbar-note">QQ 空间风格的精简浏览端</div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>数据源</h2>
+          <div class="segmented" id="source-switch">
+            <button type="button" class="segmented-btn is-active" data-source="local">本地</button>
+            <button type="button" class="segmented-btn" data-source="postgres">数据库</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>好友 QQ</h2>
+          <select id="friend-select" class="input-select"></select>
+          <p id="friend-empty" class="hint" hidden>该数据源下暂无可展示好友。</p>
+        </section>
+
+        <section class="panel">
+          <h2>时间筛选</h2>
+          <div class="preset-grid" id="preset-grid">
+            <button type="button" class="preset-btn is-active" data-preset="all">全部</button>
+            <button type="button" class="preset-btn" data-preset="7d">近7天</button>
+            <button type="button" class="preset-btn" data-preset="30d">近30天</button>
+            <button type="button" class="preset-btn" data-preset="90d">近90天</button>
+            <button type="button" class="preset-btn" data-preset="1y">近1年</button>
+          </div>
+          <label class="field">
+            <span>开始日期</span>
+            <input id="start-date" class="input-text" type="date">
+          </label>
+          <label class="field">
+            <span>结束日期</span>
+            <input id="end-date" class="input-text" type="date">
+          </label>
+        </section>
+
+        <section class="panel">
+          <h2>排序</h2>
+          <div class="segmented" id="sort-switch">
+            <button type="button" class="segmented-btn is-active" data-sort="desc">时间降序</button>
+            <button type="button" class="segmented-btn" data-sort="asc">时间升序</button>
+          </div>
+        </section>
+
+        <section class="panel panel-actions">
+          <button type="button" id="apply-filters" class="primary-btn">应用筛选</button>
+        </section>
+      </aside>
+
+      <section class="content">
+        <section class="content-header">
+          <div>
+            <h1>说说列表</h1>
+            <p id="filter-summary" class="summary">等待加载数据…</p>
+          </div>
+          <div id="result-meta" class="result-meta"></div>
+        </section>
+
+        <section id="error-box" class="error-box" hidden></section>
+        <section id="loading-box" class="loading-box" hidden>正在加载数据…</section>
+        <section id="shuoshuo-list" class="feed"></section>
+
+        <nav class="pager" id="main-pager" hidden>
+          <button type="button" id="prev-page" class="pager-btn">上一页</button>
+          <span id="page-indicator" class="pager-indicator"></span>
+          <button type="button" id="next-page" class="pager-btn">下一页</button>
+        </nav>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.QQFETCH_BOOT = {
+      defaultSource: "{{ default_source }}",
+      defaultPageSize: {{ default_page_size }},
+      defaultCommentPageSize: {{ default_comment_page_size }}
+    };
+  </script>
+  <script src="{{ request.url_for('static', path='app.js') }}"></script>
+</body>
+</html>

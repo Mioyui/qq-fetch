@@ -26,6 +26,13 @@ def test_reset_flags():
     assert a.reset is True and a.reset_login is True
 
 
+def test_web_command():
+    a = build_parser().parse_args(["web", "--host", "0.0.0.0", "--port", "8765"])
+    assert a.command == "web"
+    assert a.host == "0.0.0.0"
+    assert a.port == 8765
+
+
 def test_missing_subcommand_errors():
     with pytest.raises(SystemExit):
         build_parser().parse_args([])

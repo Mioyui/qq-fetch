@@ -22,6 +22,7 @@ from .qzone.client import QzoneClient
 from .qzone.msglist import MsglistFetcher
 from .storage.checkpoint import Checkpoint
 from .storage.repository import make_repository
+from .web.app import run_web_server
 
 
 def _session_store(cfg: Config) -> SessionStore:
@@ -153,6 +154,9 @@ def build_parser() -> argparse.ArgumentParser:
     pf.add_argument("--no-images", action="store_true", help="不下载图片")
     pf.add_argument("--reset-login", action="store_true", help="忽略已保存登录态,强制重新扫码")
     pf.add_argument("--reset", action="store_true", help="清空断点,重新全量抓取")
+    pw = sub.add_parser("web", help="启动本地说说浏览页")
+    pw.add_argument("--host", default="127.0.0.1", help="Web 服务绑定地址")
+    pw.add_argument("--port", type=int, default=8000, help="Web 服务端口")
     return p
 
 
@@ -174,6 +178,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "login":
         ensure_login(cfg, force=True)
         return 0
+    if args.command == "web":
+        return run_web_server(cfg, args.host, args.port)
 
     # fetch:用 CLI 参数覆盖配置
     if args.target:

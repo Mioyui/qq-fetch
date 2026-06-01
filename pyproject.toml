@@ -9,9 +9,12 @@ description = "QQ 空间说说数据抓取工具(扫码登录、无痕抓取)"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "fastapi>=0.115",
     "httpx>=0.27",
+    "jinja2>=3.1",
     "psycopg>=3.2",
     "tomli>=2.0 ; python_version < '3.11'",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +27,9 @@ qqfetch = "qqfetch.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["qqfetch*"]
+
+[tool.setuptools.package-data]
+"qqfetch.web" = ["templates/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
