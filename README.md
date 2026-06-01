@@ -119,6 +119,83 @@ qqfetch fetch --target 123456789 --no-images   # 不下载图片
 - `[storage] postgres_schema`:建表/查询使用的 schema,默认 `public`
 - `[storage] postgres_auto_init`:是否在抓取前自动执行 `sql/postgres_schema.sql`,默认 `true`
 
+## 本地浏览页
+
+项目现在内置了一个 Web 浏览页,用于按好友 QQ 浏览已经抓取到的说说数据。
+
+### 启动方式
+
+```bash
+python -m qqfetch web
+```
+
+可选参数:
+
+```bash
+python -m qqfetch web --host 127.0.0.1 --port 8000
+```
+
+启动后默认访问:
+
+```text
+http://127.0.0.1:8000/
+```
+
+### 页面功能
+
+- 选择数据源:本地 `data/` 或 PostgreSQL
+- 选择好友 QQ
+- 说说主列表分页
+- 每条说说内评论独立分页
+- 按发布时间升序/降序切换
+- 起止日期筛选
+- 快捷时间区间:`全部`、`近7天`、`近30天`、`近90天`、`近1年`
+
+页面视觉参考 QQ 空间,但做了更精简的布局:
+
+- 左侧为筛选与好友选择
+- 右侧为说说列表与分页器
+- 图片以网格展示
+- 评论区按卡片展开,不刷新整页
+
+### 两种数据源
+
+#### 1. 本地数据源 `local`
+
+本地源只读取当前真实存在的结构化文件,查找顺序固定为:
+
+1. `data/<QQ>/shuoshuo.sqlite`
+2. `data/<QQ>/shuoshuo.jsonl`
+
+如果目标目录下只有 `checkpoint.json` 和 `images/`,而没有 `shuoshuo.sqlite` 或 `shuoshuo.jsonl`,则该 QQ 不会出现在本地源的好友列表里。
+
+这意味着:
+
+- 如果抓取时使用的是 `storage_format = "jsonl"` 或 `storage_format = "sqlite"`,通常可以直接从本地源浏览
+- 如果抓取时使用的是 `storage_format = "postgres"`,当前实现默认不会额外落一份本地结构化说说文件,因此本地源可能为空
+
+#### 2. 数据库数据源 `postgres`
+
+数据库源直接读取 PostgreSQL 中的三张表:
+
+- `qqfetch_shuoshuo`
+- `qqfetch_comment`
+- `qqfetch_picture`
+
+它依赖当前配置文件中的:
+
+- `storage.postgres_dsn`
+- `storage.postgres_schema`
+
+数据库源只支持 PostgreSQL,当前不支持把 SQLite 当作 Web 数据源直接查询。
+
+### 已知限制
+
+- 浏览页只做只读展示,不支持重新抓取、编辑或删除
+- 时间筛选和升降序只作用于说说列表,不单独作用于评论
+- 好友列表默认以 QQ 号展示,不额外解析昵称
+- 本地源不会自动把 PostgreSQL 中的数据补回 `data/` 目录
+
 ## PostgreSQL 入库说明
 
 `storage_format = "postgres"` 时,抓取结果会按“当前快照”写入 PostgreSQL:
@@ -194,6 +271,18 @@ pytest
 # PowerShell
 $env:QQFETCH_TEST_POSTGRES_DSN="postgresql://user:password@127.0.0.1:5432/qqfetch_test"
 pytest tests/test_repository_postgres.py -q
+```
+
+浏览页相关测试:
+
+```bash
+pytest tests/test_web_local_source.py tests/test_web_app.py -q
+```
+
+如需执行浏览页的 PostgreSQL 数据源测试:
+
+```bash
+pytest tests/test_web_postgres_source.py -q
 ```
 
 单元测试覆盖:hash33/g_tk 签名(交叉验证)、ptuiCB 回调解析、说说/图片解析、断点续传、分页去重、失效与风控分流、限速重试、无痕断言等。涉及真实 QQ 接口的部分(扫码、实际抓取)需用真实账号通过探测脚本与冒烟测试验证。
