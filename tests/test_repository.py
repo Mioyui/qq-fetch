@@ -9,7 +9,7 @@ import pytest
 
 from qqfetch.errors import ConfigError
 from qqfetch.models import Comment, Picture, Shuoshuo
-from qqfetch.storage.repository import JsonlRepository, _comment_key, make_repository
+from qqfetch.storage.repository import JsonlRepository, _comment_key, _unique_comment_key, make_repository
 
 
 def _sh(tid: str) -> Shuoshuo:
@@ -160,3 +160,27 @@ def test_comment_key_falls_back_to_digest():
     comment = Comment(comment_id="", content="x", created_time=1, author_uin="2")
     key = _comment_key(1, "t1", comment)
     assert len(key) == 40
+
+
+def test_unique_comment_key_disambiguates_duplicate_comment_id():
+    """同一条说说内 comment_id 重复时，应自动生成不冲突的主键。"""
+    used = set()
+    c1 = Comment(comment_id="1", content="a", created_time=1, author_uin="2", author_name="甲")
+    c2 = Comment(comment_id="1", content="b", created_time=2, author_uin="3", author_name="乙")
+    key1 = _unique_comment_key(1, "t1", c1, used)
+    key2 = _unique_comment_key(1, "t1", c2, used)
+    assert key1 == "1"
+    assert key2.startswith("1:")
+    assert key1 != key2
+
+
+def test_unique_comment_key_disambiguates_exact_duplicate_rows():
+    """即使评论内容完全重复，也要能继续追加顺序后缀兜底。"""
+    used = set()
+    c = Comment(comment_id="1", content="same", created_time=1, author_uin="2", author_name="甲")
+    key1 = _unique_comment_key(1, "t1", c, used)
+    key2 = _unique_comment_key(1, "t1", c, used)
+    key3 = _unique_comment_key(1, "t1", c, used)
+    assert key1 == "1"
+    assert key2.startswith("1:")
+    assert key3.startswith(key2 + ":")

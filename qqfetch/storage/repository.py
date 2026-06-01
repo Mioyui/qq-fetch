@@ -244,13 +244,15 @@ class PostgresRepository:
         ).format(self._table("qqfetch_comment"))
         with self._conn.cursor() as cur:
             cur.execute(delete_stmt, (self._target_qq, sh.tid))
+            used_keys: Set[str] = set()
             for c in sh.comments:
+                comment_key = _unique_comment_key(self._target_qq, sh.tid, c, used_keys)
                 cur.execute(
                     insert_stmt,
                     (
                         self._target_qq,
                         sh.tid,
-                        _comment_key(self._target_qq, sh.tid, c),
+                        comment_key,
                         c.comment_id,
                         c.content,
                         c.created_time,
@@ -330,6 +332,32 @@ def _comment_key(target_qq: int, tid: str, comment: Comment) -> str:
         return comment.comment_id
     seed = f"{target_qq}:{tid}:{comment.author_uin}:{comment.created_time}:{comment.content}"
     return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:40]
+
+
+def _unique_comment_key(target_qq: int, tid: str, comment: Comment, used_keys: Set[str]) -> str:
+    """为单条说说内的评论生成不会撞库的唯一键。"""
+    base_key = _comment_key(target_qq, tid, comment)
+    if base_key not in used_keys:
+        used_keys.add(base_key)
+        return base_key
+
+    digest_seed = (
+        f"{target_qq}:{tid}:{comment.comment_id}:{comment.author_uin}:"
+        f"{comment.author_name}:{comment.created_time}:{comment.content}"
+    )
+    digest = hashlib.sha1(digest_seed.encode("utf-8")).hexdigest()[:12]
+    candidate = f"{base_key}:{digest}"
+    if candidate not in used_keys:
+        used_keys.add(candidate)
+        return candidate
+
+    suffix = 2
+    while True:
+        deduped = f"{candidate}:{suffix}"
+        if deduped not in used_keys:
+            used_keys.add(deduped)
+            return deduped
+        suffix += 1
 
 
 def make_repository(
