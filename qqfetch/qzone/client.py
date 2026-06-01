@@ -62,7 +62,9 @@ class QzoneClient:
         """调用说说列表接口,返回校验后的原始 JSON(code==0)。"""
         self._assert_traceless(MSGLIST)  # 固定接口,断言兜底防回归
         params = {
-            "uin": self._login_uin,
+            # QQ 空间 msglist 接口用 uin/hostUin 指定被读取的空间主人；
+            # 登录账号只通过 Cookie 与 g_tk 体现访问权限。
+            "uin": host_uin,
             "hostUin": host_uin,
             "pos": pos,
             "num": num,

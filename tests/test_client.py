@@ -29,7 +29,7 @@ def test_injects_gtk_and_host_uin():
     data = _client().call_msglist(222, 0, 20)
     assert data["msglist"][0]["tid"] == "x"
     url = str(respx.calls.last.request.url)
-    assert "g_tk=" in url and "hostUin=222" in url and "uin=111" in url
+    assert "g_tk=" in url and "hostUin=222" in url and "uin=222" in url
 
 
 @respx.mock
