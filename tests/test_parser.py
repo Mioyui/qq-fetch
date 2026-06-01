@@ -47,3 +47,44 @@ def test_raw_preserved():
 def test_empty_payload():
     page = parse_msglist({})
     assert page.items == [] and page.total == 0
+
+
+def test_nested_reply_comments_are_flattened():
+    page = parse_msglist(
+        {
+            "total": 1,
+            "msglist": [
+                {
+                    "tid": "x1",
+                    "content": "demo",
+                    "created_time": 1,
+                    "cmtnum": 1,
+                    "commentlist": [
+                        {
+                            "tid": 1,
+                            "uin": 100,
+                            "name": "友人A",
+                            "content": "顶层评论",
+                            "create_time": 10,
+                            "list_3": [
+                                {
+                                    "tid": 1,
+                                    "uin": 200,
+                                    "name": "说说主人",
+                                    "content": "作者回复",
+                                    "create_time": 11,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+    comments = page.items[0].comments
+    assert len(comments) == 2
+    assert comments[0].comment_id == "1"
+    assert comments[0].author_name == "友人A"
+    assert comments[1].comment_id == "1:1"
+    assert comments[1].author_name == "说说主人"
+    assert comments[1].content == "作者回复"

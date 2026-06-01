@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..models import Comment, Shuoshuo
 from ..utils import first_present
@@ -25,16 +25,40 @@ def parse_comments(item: Dict[str, Any]) -> List[Comment]:
     """解析评论列表(字段名容错)。"""
     out: List[Comment] = []
     for c in item.get("commentlist") or []:
-        out.append(
-            Comment(
-                comment_id=str(first_present(c, "tid", "commentid", "id") or ""),
-                content=c.get("content") or "",
-                created_time=int(first_present(c, "create_time", "createTime", "abstime") or 0),
-                author_uin=str(first_present(c, "uin", "poster_uin") or ""),
-                author_name=str(first_present(c, "name", "nickname", "poster_name") or ""),
-            )
-        )
+        parent = _parse_comment(c)
+        out.append(parent)
+        # 说说主人的回复通常嵌在顶层评论的 list_3 中，这里一并展开。
+        # 复合 comment_id 用于避免子回复和父评论共用 tid 时在下游存储中互相覆盖。
+        for idx, child in enumerate(_nested_replies(c), start=1):
+            out.append(_parse_comment(child, parent_comment_id=parent.comment_id, reply_index=idx))
     return out
+
+
+def _parse_comment(
+    item: Dict[str, Any],
+    *,
+    parent_comment_id: Optional[str] = None,
+    reply_index: int = 0,
+) -> Comment:
+    """解析单条评论或回复。"""
+    raw_comment_id = str(first_present(item, "tid", "commentid", "id") or "")
+    comment_id = raw_comment_id
+    if parent_comment_id:
+        suffix = raw_comment_id or str(reply_index)
+        comment_id = f"{parent_comment_id}:{suffix}"
+    return Comment(
+        comment_id=comment_id,
+        content=item.get("content") or "",
+        created_time=int(first_present(item, "create_time", "createTime", "abstime") or 0),
+        author_uin=str(first_present(item, "uin", "poster_uin") or ""),
+        author_name=str(first_present(item, "name", "nickname", "poster_name") or ""),
+    )
+
+
+def _nested_replies(item: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """提取评论下的嵌套回复列表。"""
+    replies = first_present(item, "list_3", "replylist", "reply_list")
+    return list(replies or [])
 
 
 def _like_count(item: Dict[str, Any]) -> int:
